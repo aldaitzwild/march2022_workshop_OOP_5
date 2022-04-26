@@ -3,6 +3,7 @@
 namespace App;
 
 use Exception;
+use App\Movable;
 
 class Arena
 {
@@ -17,17 +18,19 @@ class Arena
     private Hero $hero;
 
     private int $size = 10;
+    private array $tiles;
 
-    public function __construct(Hero $hero, array $monsters)
+    public function __construct(Hero $hero, array $monsters, array $tiles)
     {
         $this->hero = $hero;
         $this->monsters = $monsters;
+        $this->tiles = $tiles;
     }
 
-    public function move(Fighter $fighter, string $direction)
+    public function move(Movable $movable, string $direction)
     {
-        $x = $fighter->getX();
-        $y = $fighter->getY();
+        $x = $movable->getX();
+        $y = $movable->getY();
         if (!key_exists($direction, self::DIRECTIONS)) {
             throw new Exception('Unknown direction');
         }
@@ -45,8 +48,17 @@ class Arena
             }
         }
 
-        $fighter->setX($destinationX);
-        $fighter->setY($destinationY);
+        foreach($this->tiles as $tile){
+            if($tile->getX() == $destinationX && $tile->getY() == $destinationY)
+            {
+                if(!$tile->isCrossable($movable)) {
+                    throw new Exception('Cette tuile est inaccessible');
+                }
+            }
+        }
+
+        $movable->setX($destinationX);
+        $movable->setY($destinationY);
     }
 
     public function getDistance(Fighter $startFighter, Fighter $endFighter): float
@@ -121,5 +133,35 @@ class Arena
     public function getSize(): int
     {
         return $this->size;
+    }
+
+    /**
+     * Get the value of tiles
+     */ 
+    public function getTiles(): array
+    {
+        return $this->tiles;
+    }
+
+    /**
+     * Set the value of tiles
+     *
+     * @return  self
+     */ 
+    public function setTiles($tiles): void
+    {
+        $this->tiles = $tiles;
+    }
+
+    public function arenaMove(string $destination)
+    {
+        $this->move($this->hero, $destination);
+
+        foreach($this->monsters as $monster) 
+        {
+            if($monster instanceof Movable) {
+                $this->move($monster, array_rand(self::DIRECTIONS));
+            }
+        }
     }
 }
